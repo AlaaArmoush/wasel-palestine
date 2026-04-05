@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import hashlib
 import jwt
-from jwt import InvalidTokenError
 from pwdlib import PasswordHash
 
 from app.core.config import settings
@@ -48,4 +47,3 @@ def decode_token(token: str) -> dict:
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
-
