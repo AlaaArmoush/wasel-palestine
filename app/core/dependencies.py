@@ -29,8 +29,8 @@ def get_current_user(
         payload = decode_token(credentials.credentials)
         if payload.get("type") != "access":
             raise credentials_exception
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        user_id = payload.get("sub")
+        if not isinstance(user_id, str):
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
