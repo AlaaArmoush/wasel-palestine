@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
-from app.core.config import settings
 
 app = FastAPI(
     title="Wasel Palestine API",
@@ -19,9 +20,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"success": False, "message": "Validation error", "data": exc.errors()},
+    )
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={"success": False, "message": "Resource not found", "data": None},
+    )
+
+
 app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "version": "1.0.0"}
+    return {"success": True, "message": "ok", "data": {"version": "1.0.0"}}
