@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
 from app.api.v1.router import api_router
 
 app = FastAPI(
@@ -25,7 +26,13 @@ app.add_middleware(
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"success": False, "message": "Validation error", "data": exc.errors()},
+        content=jsonable_encoder(
+            {
+                "success": False,
+                "message": "Validation error",
+                "data": exc.errors(),
+            }
+        ),
     )
 
 
@@ -43,3 +50,4 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/health")
 def health_check():
     return {"success": True, "message": "ok", "data": {"version": "1.0.0"}}
+
