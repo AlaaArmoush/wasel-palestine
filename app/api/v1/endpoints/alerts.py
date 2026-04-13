@@ -4,6 +4,8 @@ from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
 from app.schemas.alert import AlertResponse
 from app.services import alerts as alert_service
+from uuid import UUID
+
 
 router = APIRouter()
 
@@ -23,3 +25,14 @@ def get_alerts(db: DB, pagination: PaginationDep):
     return success_response(
         data=paginated_data, message="Alerts Retrieved"
     )
+
+
+@router.get("/{alert_id}")
+def get_alert_by_id (db:DB,alert_id: UUID):
+    alert = alert_service.get_alert_by_id(db,alert_id)
+
+    return success_response(data=AlertResponse.model_validate(alert), message="Alert Retrieved")
+
+
+
+
