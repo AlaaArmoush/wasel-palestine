@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query
 from uuid import UUID
 
 from app.core.dependencies import DB
-from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut
+from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut
 from app.services import checkpoints as service
 from app.utils.responses import success_response
 from app.utils.pagination import PaginationDep, PaginatedResponse
@@ -43,4 +43,26 @@ def get_checkpoint(checkpoint_id: UUID, db: DB):
     return success_response(
         data=CheckpointDetailOut.model_validate(checkpoint), 
         message="Checkpoint Retrieved"
+    )
+
+
+@router.get("/{id}/history", description="get status change history")
+def get_checkpoint_history(
+    id: UUID, 
+    db: DB,
+    pagination: PaginationDep
+):
+    items, total = service.get_checkpoint_history(
+        db=db,
+        checkpoint_id=id,
+        skip=pagination.offset,
+        limit=pagination.page_size
+    )
+    
+    items_out = [CheckpointStatusHistoryOut.model_validate(item) for item in items]
+    paginated_data = PaginatedResponse.create(items_out, total, pagination)
+    
+    return success_response(
+        data=paginated_data, 
+        message="Checkpoint History Retrieved"
     )
