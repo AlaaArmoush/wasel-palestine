@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-from app.models.checkpoint import Checkpoint, CheckpointStatus
+from app.models.checkpoint import Checkpoint, CheckpointStatus, CheckpointStatusHistory
 
 def get_checkpoints(
     db: Session,
@@ -39,3 +39,16 @@ def get_checkpoint_by_id(db: Session, checkpoint_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND, detail="Checkpoint not found"
         )
     return checkpoint
+
+
+def get_checkpoint_history(
+    db: Session,
+    checkpoint_id: UUID,
+    skip: int = 0,
+    limit: int = 100,
+):
+    query = db.query(CheckpointStatusHistory).filter(CheckpointStatusHistory.checkpoint_id == checkpoint_id)
+    total = query.count()
+    items = query.order_by(CheckpointStatusHistory.changed_at.desc()).offset(skip).limit(limit).all()
+    
+    return items, total
