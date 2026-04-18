@@ -67,6 +67,15 @@ def resolve_incident(incident_id: UUID, db: DB):
     )
 
 
+@router.patch("/{incident_id}/verify", dependencies=[ModeratorOrAdmin])
+def verify_incident(incident_id: UUID, db: DB, current_user: CurrentUser):
+    item = service.verify_incident(db, incident_id, str(current_user.id))
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident verified and alert triggered"
+    )
+
+
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[AdminOnly])
 def delete_incident(incident_id: UUID, db: DB):
     service.delete_incident(db, incident_id)
