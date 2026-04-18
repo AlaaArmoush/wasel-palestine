@@ -5,11 +5,8 @@ from app.utils.responses import success_response
 from app.schemas.alert import AlertResponse,AlertSubscriptionCreate,AlertSubscriptionResponse
 from app.services import alerts as alert_service
 from uuid import UUID
-<<<<<<< HEAD
-from app.core.dependencies import CurrentUser
 
-=======
->>>>>>> 263d70bf91280a3e655019f0783e7207a1afd872
+from app.core.dependencies import CurrentUser
 
 
 router = APIRouter()
@@ -39,7 +36,6 @@ def get_alert_by_id (db:DB,alert_id: UUID):
     return success_response(data=AlertResponse.model_validate(alert), message="Alert Retrieved")
 
 
-<<<<<<< HEAD
 @router.post("/subscriptions")
 def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCreate):
     subscription = alert_service.create_subscription(db,currentUser.id,payload)
@@ -50,7 +46,5 @@ def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCrea
 
 
 
-=======
->>>>>>> 263d70bf91280a3e655019f0783e7207a1afd872
 
 
