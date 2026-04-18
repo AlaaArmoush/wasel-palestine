@@ -4,6 +4,7 @@ import re
 
 from pydantic import BaseModel, field_validator, ConfigDict
 
+from app.db.base import Base
 from app.models.user import UserRole
 
 
@@ -33,3 +34,7 @@ class UserUpdate(BaseModel):
                 "Username must be 3-50 chars, letters/numbers/underscores only"
             )
         return value
+
+
+class UserRoleUpdate(BaseModel):
+    role: UserRole
