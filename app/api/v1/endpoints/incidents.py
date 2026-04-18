@@ -56,3 +56,12 @@ def update_incident(
         data=IncidentOut.model_validate(item),
         message="Incident updated"
     )
+
+
+@router.patch("/{incident_id}/resolve", dependencies=[ModeratorOrAdmin])
+def resolve_incident(incident_id: UUID, db: DB):
+    item = service.resolve_incident(db, incident_id)
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident marked as resolved"
+    )
