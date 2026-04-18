@@ -58,3 +58,11 @@ def list_users(
         ),
         message="Users retrieved",
     )
+
+
+@router.delete("/{user_id}", dependencies=[AdminOnly])
+def deactivate_user(user_id: UUID, db: DB):
+    user = service.deactivate_user(db, user_id)
+    return success_response(
+        data=UserOut.model_validate(user), message="User deactivated"
+    )
