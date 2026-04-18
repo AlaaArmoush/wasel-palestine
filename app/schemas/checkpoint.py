@@ -1,8 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from app.models.checkpoint import CheckpointStatus
+
+
+
 
 class CheckpointOut(BaseModel):
     id: UUID
@@ -35,3 +38,20 @@ class CheckpointStatusHistoryOut(BaseModel):
     changed_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+
+
+
+
+    
+
+
+#for post method
+class CheckpointCreate(BaseModel):
+    name: str = Field(..., min_length=1)
+    name_ar: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    latitude: float | None = None
+    longitude: float | None = None
+    current_status: CheckpointStatus = Field(..., min_length=1)
+    is_active: bool

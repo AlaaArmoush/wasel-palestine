@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.models.checkpoint import Checkpoint, CheckpointStatus, CheckpointStatusHistory
+from app.schemas.checkpoint import CheckpointCreate
 
 def get_checkpoints(
     db: Session,
@@ -52,3 +53,34 @@ def get_checkpoint_history(
     items = query.order_by(CheckpointStatusHistory.changed_at.desc()).offset(skip).limit(limit).all()
     
     return items, total
+
+
+
+
+
+
+
+
+
+
+
+
+
+#for post method
+def create_checkpoint(db: Session, obj_in: CheckpointCreate, current_user_id: UUID | None = None):
+    db_obj = Checkpoint(**obj_in.model_dump())
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    
+    history = CheckpointStatusHistory(
+        checkpoint_id=db_obj.id,
+        new_status=db_obj.current_status,
+        changed_by=current_user_id,
+        reason="Initial creation"
+    )
+    db.add(history)
+    db.commit()
+    db.refresh(db_obj)
+    
+    return db_obj
