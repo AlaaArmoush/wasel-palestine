@@ -1,3 +1,4 @@
+from uuid import UUID
 from fastapi import APIRouter, status
 from app.core.dependencies import DB, CurrentUser
 from app.utils.pagination import PaginationDep, PaginatedResponse
@@ -16,6 +17,13 @@ def create_incident(payload: IncidentCreate, db: DB, current_user: CurrentUser):
         message="Incident created"
     )
 
+@router.get("/{incident_id}")
+def get_incident(incident_id: UUID, db: DB):
+    item = service.get_incident_by_id(db, incident_id)
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident retrieved"
+    )
 
 @router.get("/")
 def list_incidents(
