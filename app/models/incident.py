@@ -19,11 +19,11 @@ from app.db.base import Base
 
 class IncidentType(str, enum.Enum):
     closure = "closure"
-    delay = "delay"
+    traffic = "traffic"
     accident = "accident"
     weather_hazard = "weather_hazard"
     military_activity = "military_activity"
-    protest = "protest"
+    settler_activity = "settler_activity"
     other = "other"
 
 
