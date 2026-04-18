@@ -1,7 +1,17 @@
 from sqlalchemy.orm import Session
 from app.models.incident import Incident, IncidentType, IncidentSeverity, IncidentStatus
+from app.schemas.incident import IncidentCreate
 from app.utils.geo import haversine_distance
+from uuid import UUID
+from fastapi import HTTPException, status
 
+
+def create_incident(db: Session, payload: IncidentCreate, user_id: str) -> Incident:
+    incident = Incident(**payload.model_dump(), reported_by=user_id)
+    db.add(incident)
+    db.commit()
+    db.refresh(incident)
+    return incident
 
 def get_all_incidents(db: Session, skip: int, limit: int,
     incident_type: IncidentType | None = None,
