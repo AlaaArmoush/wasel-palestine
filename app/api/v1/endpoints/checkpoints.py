@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Query
 from uuid import UUID
 
-from app.core.dependencies import DB
-from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut
+from app.core.dependencies import DB, AdminOnly, CurrentUser
+from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut, CheckpointCreate
 from app.services import checkpoints as service
 from app.utils.responses import success_response
 from app.utils.pagination import PaginationDep, PaginatedResponse
@@ -34,6 +34,23 @@ def get_checkpoints(
     return success_response(
         data=paginated_data, 
         message="Checkpoints Retrieved"
+    )
+
+
+@router.post("/", dependencies=[AdminOnly], status_code=201)
+def create_checkpoint(
+    payload: CheckpointCreate, 
+    db: DB,
+    current_user: CurrentUser
+):
+    checkpoint = service.create_checkpoint(
+        db=db, 
+        obj_in=payload, 
+        current_user_id=current_user.id
+    )
+    return success_response(
+        data=CheckpointDetailOut.model_validate(checkpoint), 
+        message="Checkpoint Created"
     )
 
 
