@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 from app.models.incident import Incident, IncidentType, IncidentSeverity, IncidentStatus
 from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentOut
 from app.utils.geo import haversine_distance
@@ -53,6 +54,22 @@ def update_incident(db: Session, incident_id: UUID, payload: IncidentUpdate) -> 
     for field, value in updates.items():
         setattr(incident, field, value)
 
+    db.commit()
+    db.refresh(incident)
+    return incident
+
+
+def resolve_incident(db: Session, incident_id: UUID) -> Incident:
+    incident = get_incident_by_id(db, incident_id)
+
+    if incident.status == IncidentStatus.resolved:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Incident is already resolved"
+        )
+
+    incident.status = IncidentStatus.resolved
+    incident.resolved_at = func.now()
     db.commit()
     db.refresh(incident)
     return incident
