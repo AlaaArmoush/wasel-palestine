@@ -15,6 +15,17 @@ class IncidentCreate(BaseModel):
     checkpoint_id: UUID | None = None
 
 
+class IncidentUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    incident_type: IncidentType | None = None
+    severity: IncidentSeverity | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    location_description: str | None = None
+    checkpoint_id: UUID | None = None
+
+
 class IncidentOut(BaseModel):
     id: UUID
     title: str

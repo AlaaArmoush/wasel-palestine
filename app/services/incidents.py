@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.incident import Incident, IncidentType, IncidentSeverity, IncidentStatus
-from app.schemas.incident import IncidentCreate, IncidentOut
+from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentOut
 from app.utils.geo import haversine_distance
 from uuid import UUID
 from fastapi import HTTPException, status
@@ -44,3 +44,15 @@ def get_all_incidents(db: Session, skip: int, limit: int,
         items = [i for i in items if haversine_distance(lat, lng, i.latitude, i.longitude) <= radius_km]
 
     return items, total
+
+
+def update_incident(db: Session, incident_id: UUID, payload: IncidentUpdate) -> Incident:
+    incident = get_incident_by_id(db, incident_id)
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(incident, field, value)
+
+    db.commit()
+    db.refresh(incident)
+    return incident
