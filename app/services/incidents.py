@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.incident import Incident, IncidentType, IncidentSeverity, IncidentStatus
-from app.schemas.incident import IncidentCreate
+from app.schemas.incident import IncidentCreate, IncidentOut
 from app.utils.geo import haversine_distance
 from uuid import UUID
 from fastapi import HTTPException, status
@@ -11,6 +11,13 @@ def create_incident(db: Session, payload: IncidentCreate, user_id: str) -> Incid
     db.add(incident)
     db.commit()
     db.refresh(incident)
+    return incident
+
+
+def get_incident_by_id(db: Session, incident_id: UUID):
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
     return incident
 
 def get_all_incidents(db: Session, skip: int, limit: int,
