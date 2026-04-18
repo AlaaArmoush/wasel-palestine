@@ -1,5 +1,6 @@
+from operator import itemgetter
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, query
 from uuid import UUID
 from app.models.user import User
 from app.schemas.user import UserUpdate, UserRoleUpdate
@@ -35,7 +36,7 @@ def update_own_profile(db: Session, user: User, payload: UserUpdate) -> User:
     return user
 
 
-def get_user_by_id(db, user_id: UUID):
+def get_user_by_id(db: Session, user_id: UUID):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -44,9 +45,20 @@ def get_user_by_id(db, user_id: UUID):
     return user
 
 
-def update_user_role(db, user_id: UUID, payload: UserRoleUpdate):
+def update_user_role(db: Session, user_id: UUID, payload: UserRoleUpdate):
     user = get_user_by_id(db, user_id)
     user.role = payload.role
     db.commit()
     db.refresh(user)
     return user
+
+
+def get_all_users(db: Session, skip: int, limit: int, role=None, is_active=None):
+    query = db.query(User)
+    if role is not None:
+        query = query.filter(User.role == role)
+    if is_active is not None:
+        query = query.filter(User.is_active == is_active)
+    total = query.count()
+    items = query.order_by(User.created_at.desc()).offset(skip).limit(limit).all()
+    return items, total
