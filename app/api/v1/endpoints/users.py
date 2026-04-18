@@ -1,8 +1,10 @@
 from fastapi import APIRouter
 
 from app.core.dependencies import DB, CurrentUser, AdminOnly
+from app.models.user import UserRole
 from app.schemas.user import UserOut, UserRoleUpdate, UserUpdate
 from app.services import users as service
+from app.utils.pagination import PaginatedResponse, PaginationDep
 from app.utils.responses import success_response
 from uuid import UUID
 
@@ -37,4 +39,22 @@ def update_user_role(user_id: UUID, payload: UserRoleUpdate, db: DB):
     return success_response(
         data=UserOut.model_validate(user),
         message=f"User role updated to {user.role.value}",
+    )
+
+
+@router.get("/", dependencies=[AdminOnly])
+def list_users(
+    db: DB,
+    pagination: PaginationDep,
+    role: UserRole | None = None,
+    is_active: bool | None = None,
+):
+    items, total = service.get_all_users(
+        db, pagination.offset, pagination.page_size, role, is_active
+    )
+    return success_response(
+        data=PaginatedResponse.create(
+            [UserOut.model_validate(u) for u in items], total, pagination
+        ),
+        message="Users retrieved",
     )
