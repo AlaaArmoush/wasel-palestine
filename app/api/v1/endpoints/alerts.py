@@ -2,9 +2,11 @@ from fastapi import APIRouter
 from app.core.dependencies import DB
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
-from app.schemas.alert import AlertResponse
+from app.schemas.alert import AlertResponse,AlertSubscriptionCreate,AlertSubscriptionResponse
 from app.services import alerts as alert_service
 from uuid import UUID
+
+from app.core.dependencies import CurrentUser
 
 
 router = APIRouter()
@@ -27,12 +29,39 @@ def get_alerts(db: DB, pagination: PaginationDep):
     )
 
 
+
+
+
+
+@router.get("/mySubscriptions")
+def get_my_alert_subscriptions (db:DB,pagination: PaginationDep,currentUser: CurrentUser):
+    total,items = alert_service.get_my_subscriptions(db,currentUser.id,pagination)
+
+    validated_items = [AlertSubscriptionResponse.model_validate(item) for item in items]
+    
+    paginated_data = PaginatedResponse[AlertSubscriptionResponse].create(
+        items=validated_items,
+        total=total,
+        pagination=pagination
+    )
+
+
+
+    return success_response(data=paginated_data, message="Subscriptions Retrieved")
+
+@router.post("/subscriptions")
+def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCreate):
+    subscription = alert_service.create_subscription(db,currentUser.id,payload)
+    return success_response(
+        data=AlertSubscriptionResponse.model_validate(subscription), 
+        message="Subscribed to area successfully!"
+    )
+
+
+
 @router.get("/{alert_id}")
 def get_alert_by_id (db:DB,alert_id: UUID):
     alert = alert_service.get_alert_by_id(db,alert_id)
 
     return success_response(data=AlertResponse.model_validate(alert), message="Alert Retrieved")
-
-
-
 
