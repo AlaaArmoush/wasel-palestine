@@ -19,33 +19,3 @@ def get_active_alerts(db: Session, pagination: PaginationParams) -> Tuple[int, L
                  .all()
                  
     return total, items
-
-
-def get_alert_by_id(db:Session,alert_id: UUID):
-    """
-    Getting an alert from the database based on its id
-    """
-    alertIdQuery = db.query(Alert).filter(Alert.id == alert_id).first()
-    if not alertIdQuery:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"There is no alert with the id {alert_id}"  
-        )
-    return alertIdQuery
-
-
-def create_subscription(db:Session , user_id:UUID , payload: AlertSubscriptionCreate):
-    """ 
-    Subscribing to alerts for a certain area
-    """
-    new_sub =AlertSubscription(
-        user_id=user_id,
-        latitude = payload.latitude,
-        longitude = payload.longitude,
-        radius_km = payload.radius_km
-    )
-
-
-    db.add(new_sub)
-    db.commit()
-    db.refresh(new_sub)  # for UUID creation and timestamp
-    return new_sub       
