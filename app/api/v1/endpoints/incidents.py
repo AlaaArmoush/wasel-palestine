@@ -1,9 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, status
-from app.core.dependencies import DB, CurrentUser
+from app.core.dependencies import DB, CurrentUser, ModeratorOrAdmin, AdminOnly
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
-from app.schemas.incident import IncidentCreate, IncidentOut
+from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentOut
 from app.models.incident import IncidentType, IncidentSeverity, IncidentStatus
 from app.services import incidents as service
 
@@ -43,3 +43,39 @@ def list_incidents(
         data=PaginatedResponse.create([IncidentOut.model_validate(i) for i in items], total, pagination),
         message="Incidents retrieved"
     )
+
+
+@router.patch("/{incident_id}", dependencies=[ModeratorOrAdmin])
+def update_incident(
+    incident_id: UUID,
+    payload: IncidentUpdate,
+    db: DB,
+):
+    item = service.update_incident(db, incident_id, payload)
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident updated"
+    )
+
+
+@router.patch("/{incident_id}/resolve", dependencies=[ModeratorOrAdmin])
+def resolve_incident(incident_id: UUID, db: DB):
+    item = service.resolve_incident(db, incident_id)
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident marked as resolved"
+    )
+
+
+@router.patch("/{incident_id}/verify", dependencies=[ModeratorOrAdmin])
+def verify_incident(incident_id: UUID, db: DB, current_user: CurrentUser):
+    item = service.verify_incident(db, incident_id, str(current_user.id))
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident verified and alert triggered"
+    )
+
+
+@router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[AdminOnly])
+def delete_incident(incident_id: UUID, db: DB):
+    service.delete_incident(db, incident_id)
