@@ -1,5 +1,5 @@
 # app/schemas/report.py
-
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from uuid import UUID
 from typing import Optional
@@ -48,3 +48,10 @@ class ModerationLogOut(BaseModel):
     action: str
     reason: Optional[str] = None
     created_at: datetime
+
+
+class ReportCreate(BaseModel):
+    category: ReportCategory
+    description: str = Field(..., min_length=1)
+    latitude: float
+    longitude: float
