@@ -1,9 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, status
-from app.core.dependencies import DB, CurrentUser
+from app.core.dependencies import DB, CurrentUser, ModeratorOrAdmin
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
-from app.schemas.incident import IncidentCreate, IncidentOut
+from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentOut
 from app.models.incident import IncidentType, IncidentSeverity, IncidentStatus
 from app.services import incidents as service
 
@@ -42,4 +42,17 @@ def list_incidents(
     return success_response(
         data=PaginatedResponse.create([IncidentOut.model_validate(i) for i in items], total, pagination),
         message="Incidents retrieved"
+    )
+
+
+@router.patch("/{incident_id}", dependencies=[ModeratorOrAdmin])
+def update_incident(
+    incident_id: UUID,
+    payload: IncidentUpdate,
+    db: DB,
+):
+    item = service.update_incident(db, incident_id, payload)
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident updated"
     )
