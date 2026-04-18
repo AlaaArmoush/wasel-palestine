@@ -2,8 +2,9 @@ from fastapi import HTTPException, status
 from uuid import UUID
 from typing import Tuple, List
 from sqlalchemy.orm import Session
-from app.models.alert import Alert
+from app.models.alert import Alert,AlertSubscription
 from app.utils.pagination import PaginationParams
+from app.schemas.alert import AlertSubscriptionCreate
 
 def get_active_alerts(db: Session, pagination: PaginationParams) -> Tuple[int, List[Alert]]:
     """
@@ -18,15 +19,3 @@ def get_active_alerts(db: Session, pagination: PaginationParams) -> Tuple[int, L
                  .all()
                  
     return total, items
-
-
-def get_alert_by_id(db:Session,alert_id: UUID):
-    """
-    Getting an alert from the database based on its id
-    """
-    alertIdQuery = db.query(Alert).filter(Alert.id == alert_id).first()
-    if not alertIdQuery:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"There is no alert with the id {alert_id}"  
-        )
-    return alertIdQuery
