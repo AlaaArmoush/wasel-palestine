@@ -1,12 +1,21 @@
-from fastapi import APIRouter
-from app.core.dependencies import DB
+from fastapi import APIRouter, status
+from app.core.dependencies import DB, CurrentUser
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
-from app.schemas.incident import IncidentOut
+from app.schemas.incident import IncidentCreate, IncidentOut
 from app.models.incident import IncidentType, IncidentSeverity, IncidentStatus
 from app.services import incidents as service
 
 router = APIRouter()
+
+@router.post("/", status_code= status.HTTP_201_CREATED)
+def create_incident(payload: IncidentCreate, db: DB, current_user: CurrentUser):
+    item = service.create_incident(db, payload, str(current_user.id))
+    return success_response(
+        data=IncidentOut.model_validate(item),
+        message="Incident created"
+    )
+
 
 @router.get("/")
 def list_incidents(
