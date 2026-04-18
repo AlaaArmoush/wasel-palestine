@@ -62,3 +62,13 @@ def get_all_users(db: Session, skip: int, limit: int, role=None, is_active=None)
     total = query.count()
     items = query.order_by(User.created_at.desc()).offset(skip).limit(limit).all()
     return items, total
+
+
+def deactivate_user(db, user_id: UUID):
+    user = get_user_by_id(db, user_id)
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="User is already deactivated")
+    user.is_active = False
+    db.commit()
+    db.refresh(user)
+    return user
