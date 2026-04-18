@@ -29,12 +29,25 @@ def get_alerts(db: DB, pagination: PaginationDep):
     )
 
 
-@router.get("/{alert_id}")
-def get_alert_by_id (db:DB,alert_id: UUID):
-    alert = alert_service.get_alert_by_id(db,alert_id)
 
-    return success_response(data=AlertResponse.model_validate(alert), message="Alert Retrieved")
 
+
+
+@router.get("/mySubscriptions")
+def get_my_alert_subscriptions (db:DB,pagination: PaginationDep,currentUser: CurrentUser):
+    total,items = alert_service.get_my_subscriptions(db,currentUser.id,pagination)
+
+    validated_items = [AlertSubscriptionResponse.model_validate(item) for item in items]
+    
+    paginated_data = PaginatedResponse[AlertSubscriptionResponse].create(
+        items=validated_items,
+        total=total,
+        pagination=pagination
+    )
+
+
+
+    return success_response(data=paginated_data, message="Subscriptions Retrieved")
 
 @router.post("/subscriptions")
 def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCreate):
@@ -46,5 +59,9 @@ def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCrea
 
 
 
+@router.get("/{alert_id}")
+def get_alert_by_id (db:DB,alert_id: UUID):
+    alert = alert_service.get_alert_by_id(db,alert_id)
 
+    return success_response(data=AlertResponse.model_validate(alert), message="Alert Retrieved")
 
