@@ -30,3 +30,21 @@ def get_alert_by_id(db:Session,alert_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND, detail=f"There is no alert with the id {alert_id}"  
         )
     return alertIdQuery
+
+
+def trigger_alert_for_incident(db: Session, incident) -> Alert:
+    alert = Alert(
+        incident_id=incident.id,
+        title=f"[{incident.severity.upper()}] {incident.incident_type.replace('_', ' ').title()} reported",
+        message=(
+            incident.description
+            if incident.description
+            else f"A {incident.incident_type.replace('_', ' ')} incident has been verified near {incident.location_description or 'the reported location'}."
+        ),
+        latitude=incident.latitude,
+        longitude=incident.longitude,
+        radius_km=10.0,  # default notification radius
+        is_active=True,
+    )
+    db.add(alert)
+    return alert
