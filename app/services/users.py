@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.models.user import User
-from app.schemas.user import UserUpdate
+from app.schemas.user import UserUpdate, UserRoleUpdate
 
 
 def get_own_profile(user: User) -> User:
@@ -41,4 +41,12 @@ def get_user_by_id(db, user_id: UUID):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
+    return user
+
+
+def update_user_role(db, user_id: UUID, payload: UserRoleUpdate):
+    user = get_user_by_id(db, user_id)
+    user.role = payload.role
+    db.commit()
+    db.refresh(user)
     return user
