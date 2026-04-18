@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from app.core.dependencies import DB, CurrentUser, AdminOnly
 from app.models.user import UserRole
@@ -60,9 +60,6 @@ def list_users(
     )
 
 
-@router.delete("/{user_id}", dependencies=[AdminOnly])
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[AdminOnly])
 def deactivate_user(user_id: UUID, db: DB):
-    user = service.deactivate_user(db, user_id)
-    return success_response(
-        data=UserOut.model_validate(user), message="User deactivated"
-    )
+    service.deactivate_user(db, user_id)
