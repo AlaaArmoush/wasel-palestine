@@ -1,3 +1,4 @@
+from app.models.alert import Alert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from app.models.incident import Incident, IncidentType, IncidentSeverity, IncidentStatus
@@ -73,3 +74,11 @@ def resolve_incident(db: Session, incident_id: UUID) -> Incident:
     db.commit()
     db.refresh(incident)
     return incident
+
+
+def delete_incident(db: Session, incident_id: UUID) -> None:
+    incident = get_incident_by_id(db, incident_id)
+    # Null out linked alerts before deleting
+    db.query(Alert).filter(Alert.incident_id == incident_id).update({"incident_id": None})
+    db.delete(incident)
+    db.commit()

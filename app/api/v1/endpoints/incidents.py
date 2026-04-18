@@ -1,6 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, status
-from app.core.dependencies import DB, CurrentUser, ModeratorOrAdmin
+from app.core.dependencies import DB, CurrentUser, ModeratorOrAdmin, AdminOnly
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
 from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentOut
@@ -65,3 +65,8 @@ def resolve_incident(incident_id: UUID, db: DB):
         data=IncidentOut.model_validate(item),
         message="Incident marked as resolved"
     )
+
+
+@router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[AdminOnly])
+def delete_incident(incident_id: UUID, db: DB):
+    service.delete_incident(db, incident_id)
