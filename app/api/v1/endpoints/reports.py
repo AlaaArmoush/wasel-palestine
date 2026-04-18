@@ -6,8 +6,9 @@ from app.core.dependencies import DB, ModeratorOrAdmin
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
 from app.models.report import ReportCategory, ReportStatus
-from app.schemas.reports import ReportOut
+from app.schemas.reports import ReportCreateOut, ReportOut, ReportCreate
 import app.services.reports as service
+from app.core.dependencies import DB, ModeratorOrAdmin, CurrentUser
 
 router = APIRouter()
 
@@ -33,4 +34,32 @@ def list_reports(
             "page_size": pagination.page_size,
         },
         message="Reports retrieved"
+    )
+
+@router.get("/{id}")
+def get_report(
+    id: UUID,
+    db: DB,
+):
+    report = service.get_report_by_id(db, id)
+    
+    return success_response(
+        data=ReportOut.model_validate(report).model_dump(),
+        message="Report retrieved"
+    )
+
+@router.post("/")
+def submit_report(
+    payload: ReportCreate,
+    db: DB,
+    current_user: CurrentUser,
+):
+    report, potential_duplicate_of = service.create_report(db, current_user.id, payload)
+
+    return success_response(
+        data=ReportCreateOut(
+            **ReportOut.model_validate(report).model_dump(),
+            potential_duplicate_of=potential_duplicate_of
+        ).model_dump(),
+        message="Report submitted successfully"
     )
