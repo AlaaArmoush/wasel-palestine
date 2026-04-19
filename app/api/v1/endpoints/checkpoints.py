@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Query
 from uuid import UUID
 
-from app.core.dependencies import DB, AdminOnly, CurrentUser
-from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut, CheckpointCreate, CheckpointUpdate
+from app.core.dependencies import DB, AdminOnly, CurrentUser, ModeratorOrAdmin
+from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut, CheckpointCreate, CheckpointUpdate, CheckpointStatusUpdate
 from app.services import checkpoints as service
 from app.utils.responses import success_response
 from app.utils.pagination import PaginationDep, PaginatedResponse
@@ -79,6 +79,25 @@ def update_checkpoint(
     return success_response(
         data=CheckpointDetailOut.model_validate(checkpoint),
         message="Checkpoint Updated"
+    )
+
+
+@router.patch("/{checkpoint_id}/status", dependencies=[ModeratorOrAdmin])
+def update_checkpoint_status(
+    checkpoint_id: UUID,
+    payload: CheckpointStatusUpdate,
+    db: DB,
+    current_user: CurrentUser
+):
+    checkpoint = service.update_checkpoint_status(
+        db=db,
+        checkpoint_id=checkpoint_id,
+        status_in=payload,
+        current_user_id=current_user.id
+    )
+    return success_response(
+        data=CheckpointDetailOut.model_validate(checkpoint),
+        message="Checkpoint Status Updated"
     )
 
 
