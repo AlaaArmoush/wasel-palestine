@@ -131,3 +131,21 @@ def approve_report(db: Session, report_id: UUID, moderator_id: UUID):
     db.commit()
     db.refresh(report)
     return report
+
+def reject_report(db: Session, report_id: UUID, moderator_id: UUID, reason: str):
+    report = get_report_by_id(db, report_id)
+
+    if report.status != ReportStatus.pending:
+        raise HTTPException(status_code=400, detail="Only pending reports can be rejected")
+
+    report.status = ReportStatus.rejected
+    db.add(report)
+    db.add(ModerationLog(
+        moderator_id=moderator_id,
+        report_id=report.id,
+        action="rejected",
+        reason=reason,
+    ))
+    db.commit()
+    db.refresh(report)
+    return report
