@@ -59,6 +59,19 @@ def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCrea
 
 
 
+
+@router.delete("/subscriptions/{subscription_id}")
+def delete_alert_subscription(
+    subscription_id: UUID, db: DB, current_user: CurrentUser):
+    alert_service.delete_subscription(db, current_user.id, subscription_id)
+    
+    return success_response(
+        data=None, 
+        message="Subscription deleted successfully!"
+    )
+
+
+
 @router.get("/{alert_id}")
 def get_alert_by_id (db:DB,alert_id: UUID):
     alert = alert_service.get_alert_by_id(db,alert_id)
