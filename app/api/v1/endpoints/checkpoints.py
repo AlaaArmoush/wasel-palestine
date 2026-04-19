@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query
 from uuid import UUID
 
 from app.core.dependencies import DB, AdminOnly, CurrentUser
-from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut, CheckpointCreate
+from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut, CheckpointCreate, CheckpointUpdate
 from app.services import checkpoints as service
 from app.utils.responses import success_response
 from app.utils.pagination import PaginationDep, PaginatedResponse
@@ -63,6 +63,25 @@ def get_checkpoint(checkpoint_id: UUID, db: DB):
     )
 
 
+@router.patch("/{checkpoint_id}", dependencies=[AdminOnly])
+def update_checkpoint(
+    checkpoint_id: UUID,
+    payload: CheckpointUpdate,
+    db: DB,
+    current_user: CurrentUser
+):
+    checkpoint = service.update_checkpoint(
+        db=db,
+        checkpoint_id=checkpoint_id,
+        obj_in=payload,
+        current_user_id=current_user.id
+    )
+    return success_response(
+        data=CheckpointDetailOut.model_validate(checkpoint),
+        message="Checkpoint Updated"
+    )
+
+
 @router.get("/{id}/history", description="get status change history")
 def get_checkpoint_history(
     id: UUID, 
@@ -82,4 +101,20 @@ def get_checkpoint_history(
     return success_response(
         data=paginated_data, 
         message="Checkpoint History Retrieved"
+    )
+
+
+
+
+
+
+@router.delete("/{checkpoint_id}", dependencies=[AdminOnly])
+def delete_checkpoint(
+    checkpoint_id: UUID,
+    db: DB
+):
+    service.delete_checkpoint(db=db, checkpoint_id=checkpoint_id)
+    return success_response(
+        data=None,
+        message="Checkpoint Deleted Successfully"
     )
