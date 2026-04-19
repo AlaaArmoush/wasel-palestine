@@ -107,3 +107,9 @@ def create_report(db: Session, user_id: UUID, payload: ReportCreate):
     db.refresh(report)
 
     return report, (potential_duplicate.id if potential_duplicate else None)
+
+def delete_report(db: Session, report_id: UUID):
+    report = get_report_by_id(db, report_id)
+    db.delete(report)
+    db.commit()
+    return True
