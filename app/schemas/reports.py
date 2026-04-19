@@ -39,6 +39,17 @@ class VoteCreate(BaseModel):
     is_upvote: bool
 
 
+class VoteOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    report_id: UUID
+    user_id: UUID
+    is_upvote: bool
+    created_at: datetime
+    confidence_score: int  # updated score from the parent report
+
+
 class ModerationLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
