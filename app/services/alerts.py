@@ -1,4 +1,4 @@
-from dns.e164 import query
+#from dns.e164 import query
 from fastapi import HTTPException, status
 from uuid import UUID
 from typing import Tuple, List
