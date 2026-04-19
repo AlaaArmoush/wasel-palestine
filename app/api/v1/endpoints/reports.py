@@ -1,8 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from uuid import UUID
 from typing import Optional
 
-from app.core.dependencies import DB, ModeratorOrAdmin
+from app.core.dependencies import DB, ModeratorOrAdmin, AdminOnly
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
 from app.models.report import ReportCategory, ReportStatus
@@ -63,3 +63,10 @@ def submit_report(
         ).model_dump(),
         message="Report submitted successfully"
     )
+
+@router.delete("/{report_id}", dependencies=[AdminOnly], status_code=status.HTTP_204_NO_CONTENT)
+def delete_report(report_id: UUID, db: DB):
+    service.delete_report(db, report_id)
+
+
+    
