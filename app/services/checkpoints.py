@@ -118,3 +118,10 @@ def update_checkpoint(db: Session, checkpoint_id: UUID, obj_in: CheckpointUpdate
     db.refresh(checkpoint)
     
     return checkpoint
+
+
+def delete_checkpoint(db: Session, checkpoint_id: UUID):
+    checkpoint = get_checkpoint_by_id(db, checkpoint_id)
+    db.delete(checkpoint)
+    db.commit()
+    return True

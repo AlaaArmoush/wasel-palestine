@@ -102,3 +102,19 @@ def get_checkpoint_history(
         data=paginated_data, 
         message="Checkpoint History Retrieved"
     )
+
+
+
+
+
+
+@router.delete("/{checkpoint_id}", dependencies=[AdminOnly])
+def delete_checkpoint(
+    checkpoint_id: UUID,
+    db: DB
+):
+    service.delete_checkpoint(db=db, checkpoint_id=checkpoint_id)
+    return success_response(
+        data=None,
+        message="Checkpoint Deleted Successfully"
+    )
