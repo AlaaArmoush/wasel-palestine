@@ -238,3 +238,10 @@ def vote_report(db: Session, report_id: UUID, user_id: UUID, is_upvote: bool):
     db.refresh(report)
 
     return existing_vote, report
+
+
+def list_moderation_logs(db: Session, pagination):
+    query = db.query(ModerationLog).order_by(ModerationLog.created_at.desc())
+    total = query.count()
+    logs = query.offset(pagination.offset).limit(pagination.page_size).all()
+    return logs, total
