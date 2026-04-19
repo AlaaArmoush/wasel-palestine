@@ -5,6 +5,8 @@ from app.utils.responses import success_response
 from app.schemas.alert import AlertResponse,AlertSubscriptionCreate,AlertSubscriptionResponse
 from app.services import alerts as alert_service
 from uuid import UUID
+from app.services.external.weather import get_weather_conditions
+
 
 from app.core.dependencies import CurrentUser
 
@@ -57,6 +59,15 @@ def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCrea
         message="Subscribed to area successfully!"
     )
 
+@router.get("/test-weather")
+async def test_weather_api(lat: float = 31.9038, lng: float = 35.2034):
+    """
+    Temporary endpoint just to test OpenWeatherMap!
+    Default coordinates are roughly near Ramallah.
+    """
+    # Call your new function!
+    weather_data = await get_weather_conditions(lat, lng)
+    return {"weather": weather_data}
 
 
 
