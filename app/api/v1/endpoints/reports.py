@@ -69,4 +69,11 @@ def delete_report(report_id: UUID, db: DB):
     service.delete_report(db, report_id)
 
 
+@router.patch("/{report_id}/approve", dependencies=[ModeratorOrAdmin])
+def approve_report(report_id: UUID, db: DB, current_user: CurrentUser):
+    report = service.approve_report(db, report_id, current_user.id)
+    return success_response(
+        data=ReportOut.model_validate(report).model_dump(),
+        message="Report approved successfully"
+    )
     

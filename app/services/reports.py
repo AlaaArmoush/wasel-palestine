@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from app.schemas.reports import ReportCreate
-from app.models.report import Report, ReportCategory, ReportStatus
+from app.models.report import Report, ReportCategory, ReportStatus, ModerationLog
 from fastapi import HTTPException
 from app.utils.geo import haversine_distance
 
@@ -113,3 +113,21 @@ def delete_report(db: Session, report_id: UUID):
     db.delete(report)
     db.commit()
     return True
+
+
+def approve_report(db: Session, report_id: UUID, moderator_id: UUID):
+    report = get_report_by_id(db, report_id)
+
+    if report.status != ReportStatus.pending:
+        raise HTTPException(status_code=400, detail="only pending reports can be approved")
+    
+    report.status = ReportStatus.approved
+    db.add(report)
+    db.add(ModerationLog(
+    moderator_id=moderator_id,
+    report_id=report.id,
+    action="approved",
+    ))
+    db.commit()
+    db.refresh(report)
+    return report
