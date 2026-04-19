@@ -1,12 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from uuid import UUID
 from typing import Optional
 
-from app.core.dependencies import DB, ModeratorOrAdmin
+from app.core.dependencies import DB, ModeratorOrAdmin, AdminOnly
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
 from app.models.report import ReportCategory, ReportStatus
-from app.schemas.reports import ReportCreateOut, ReportOut, ReportCreate
+from app.schemas.reports import ReportCreateOut, ReportOut, ReportCreate, ReportReject
 import app.services.reports as service
 from app.core.dependencies import DB, ModeratorOrAdmin, CurrentUser
 
@@ -63,3 +63,25 @@ def submit_report(
         ).model_dump(),
         message="Report submitted successfully"
     )
+
+@router.delete("/{report_id}", dependencies=[AdminOnly], status_code=status.HTTP_204_NO_CONTENT)
+def delete_report(report_id: UUID, db: DB):
+    service.delete_report(db, report_id)
+
+
+@router.patch("/{report_id}/approve", dependencies=[ModeratorOrAdmin])
+def approve_report(report_id: UUID, db: DB, current_user: CurrentUser):
+    report = service.approve_report(db, report_id, current_user.id)
+    return success_response(
+        data=ReportOut.model_validate(report).model_dump(),
+        message="Report approved successfully"
+    )
+
+@router.patch("/{report_id}/reject", dependencies=[ModeratorOrAdmin])
+def reject_report(report_id: UUID, payload: ReportReject, db: DB, current_user: CurrentUser):
+    report = service.reject_report(db, report_id, current_user.id, payload.reason)
+    return success_response(
+        data=ReportOut.model_validate(report).model_dump(),
+        message="Report rejected successfully"
+    )
+    
