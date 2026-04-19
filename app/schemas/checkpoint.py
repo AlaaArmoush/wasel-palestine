@@ -65,3 +65,8 @@ class CheckpointUpdate(BaseModel):
     longitude: float | None = None
     current_status: CheckpointStatus | None = None
     is_active: bool | None = None
+
+
+class CheckpointStatusUpdate(BaseModel):
+    current_status: CheckpointStatus
+    reason: str | None = None
