@@ -110,6 +110,8 @@ def create_report(db: Session, user_id: UUID, payload: ReportCreate):
 
 def delete_report(db: Session, report_id: UUID):
     report = get_report_by_id(db, report_id)
+    db.query(Report).filter(Report.duplicate_of == report_id).update({"duplicate_of": None})
+    db.query(ModerationLog).filter(ModerationLog.report_id == report_id).update({"report_id": None})
     db.delete(report)
     db.commit()
     return True
@@ -146,6 +148,48 @@ def reject_report(db: Session, report_id: UUID, moderator_id: UUID, reason: str)
         action="rejected",
         reason=reason,
     ))
+    db.commit()
+    db.refresh(report)
+    return report
+
+
+def mark_report_duplicate(
+    db: Session,
+    report_id: UUID,
+    duplicate_of_id: UUID,
+    moderator_id: UUID,
+):
+    report = get_report_by_id(db, report_id)
+    original_report = get_report_by_id(db, duplicate_of_id)
+
+    if report.id == original_report.id:
+        raise HTTPException(
+            status_code=400,
+            detail="A report cannot be marked as a duplicate of itself",
+        )
+
+    if report.status != ReportStatus.pending:
+        raise HTTPException(
+            status_code=400,
+            detail="Only pending reports can be marked as duplicate",
+        )
+
+    if original_report.status == ReportStatus.rejected:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot mark a report as duplicate of a rejected report",
+        )
+
+    report.status = ReportStatus.duplicate
+    report.duplicate_of = original_report.id
+    db.add(report)
+    db.add(
+        ModerationLog(
+            moderator_id=moderator_id,
+            report_id=report.id,
+            action="marked_duplicate",
+        )
+    )
     db.commit()
     db.refresh(report)
     return report
