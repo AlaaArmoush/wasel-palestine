@@ -6,7 +6,13 @@ from app.core.dependencies import DB, ModeratorOrAdmin, AdminOnly
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response
 from app.models.report import ReportCategory, ReportStatus
-from app.schemas.reports import ReportCreateOut, ReportOut, ReportCreate, ReportReject
+from app.schemas.reports import (
+    ReportCreateOut,
+    ReportOut,
+    ReportCreate,
+    ReportReject,
+    ReportMarkDuplicate,
+)
 import app.services.reports as service
 from app.core.dependencies import DB, ModeratorOrAdmin, CurrentUser
 
@@ -85,3 +91,21 @@ def reject_report(report_id: UUID, payload: ReportReject, db: DB, current_user: 
         message="Report rejected successfully"
     )
     
+
+@router.patch("/{report_id}/mark-duplicate", dependencies=[ModeratorOrAdmin])
+def mark_report_duplicate(
+    report_id: UUID,
+    payload: ReportMarkDuplicate,
+    db: DB,
+    current_user: CurrentUser,
+):
+    report = service.mark_report_duplicate(
+        db,
+        report_id,
+        payload.duplicate_of,
+        current_user.id,
+    )
+    return success_response(
+        data=ReportOut.model_validate(report).model_dump(),
+        message="Report marked as duplicate successfully"
+    )
