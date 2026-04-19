@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-#from dns.e164 import query
-=======
->>>>>>> bc2b829fd65954a587363934d97fe4aac5d99609
+
 from fastapi import HTTPException, status
 from uuid import UUID
 from typing import Tuple, List
@@ -88,3 +85,26 @@ def create_subscription(db: Session, user_id: UUID, payload: AlertSubscriptionCr
     db.commit()
     db.refresh(new_sub)  # This fetches the created_at timestamp and ID from DB
     return new_sub
+
+
+
+    
+def delete_subscription(db: Session, user_id: UUID, subscription_id: UUID):
+    """
+    Delete a subscription Ensures the user owns it first!
+    """
+    subscription = db.query(AlertSubscription).filter(
+        AlertSubscription.id == subscription_id,
+        AlertSubscription.user_id == user_id
+    ).first()
+    
+    if not subscription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Subscription not found or you do not have permission to delete it"
+        )
+        
+    db.delete(subscription)
+    db.commit()
+    
+    return True
