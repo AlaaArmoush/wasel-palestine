@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.models.checkpoint import Checkpoint, CheckpointStatus, CheckpointStatusHistory
-from app.schemas.checkpoint import CheckpointCreate, CheckpointUpdate
+from app.schemas.checkpoint import CheckpointCreate, CheckpointUpdate, CheckpointStatusUpdate
 
 def get_checkpoints(
     db: Session,
@@ -125,3 +125,32 @@ def delete_checkpoint(db: Session, checkpoint_id: UUID):
     db.delete(checkpoint)
     db.commit()
     return True
+
+
+def update_checkpoint_status(
+    db: Session, 
+    checkpoint_id: UUID, 
+    status_in: CheckpointStatusUpdate, 
+    current_user_id: UUID
+):
+    checkpoint = get_checkpoint_by_id(db, checkpoint_id)
+    old_status = checkpoint.current_status
+    
+    if old_status == status_in.current_status:
+        return checkpoint
+        
+    checkpoint.current_status = status_in.current_status
+    db.add(checkpoint)
+    
+    history = CheckpointStatusHistory(
+        checkpoint_id=checkpoint.id,
+        previous_status=old_status,
+        new_status=status_in.current_status,
+        changed_by=current_user_id,
+        reason=status_in.reason or "Status update by moderator/admin"
+    )
+    db.add(history)
+    db.commit()
+    db.refresh(checkpoint)
+    
+    return checkpoint
