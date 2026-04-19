@@ -14,11 +14,13 @@ from app.schemas.reports import (
     ReportMarkDuplicate,
     VoteCreate,
     VoteOut,
+    ModerationLogOut,
 )
 import app.services.reports as service
 from app.core.dependencies import DB, ModeratorOrAdmin, CurrentUser
 
 router = APIRouter()
+moderation_router = APIRouter()
 
 
 @router.get("/", dependencies= [ModeratorOrAdmin])
@@ -133,4 +135,22 @@ def vote_on_report(
             }
         ).model_dump(),
         message="Vote cast successfully",
+    )
+
+
+@moderation_router.get("/logs", dependencies=[AdminOnly])
+def list_moderation_logs(
+    db: DB,
+    pagination: PaginationDep,
+):
+    logs, total = service.list_moderation_logs(db, pagination)
+
+    return success_response(
+        data={
+            "items": [ModerationLogOut.model_validate(log).model_dump() for log in logs],
+            "total": total,
+            "page": pagination.page,
+            "page_size": pagination.page_size,
+        },
+        message="Moderation logs retrieved",
     )
