@@ -55,3 +55,13 @@ class CheckpointCreate(BaseModel):
     longitude: float | None = None
     current_status: CheckpointStatus = Field(..., min_length=1)
     is_active: bool
+
+
+class CheckpointUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1)
+    name_ar: str | None = Field(None, min_length=1)
+    description: str | None = Field(None, min_length=1)
+    latitude: float | None = None
+    longitude: float | None = None
+    current_status: CheckpointStatus | None = None
+    is_active: bool | None = None
