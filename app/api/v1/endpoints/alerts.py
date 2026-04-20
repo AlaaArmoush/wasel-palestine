@@ -1,11 +1,10 @@
 from fastapi import APIRouter
 from app.core.dependencies import DB
 from app.utils.pagination import PaginationDep, PaginatedResponse
-from app.utils.responses import success_response
+from app.utils.responses import success_response, APIResponse
 from app.schemas.alert import AlertResponse,AlertSubscriptionCreate,AlertSubscriptionResponse
 from app.services import alerts as alert_service
 from uuid import UUID
-from app.services.external.weather import get_weather_conditions
 
 
 from app.core.dependencies import CurrentUser
@@ -13,7 +12,7 @@ from app.core.dependencies import CurrentUser
 
 router = APIRouter()
 
-@router.get("/")
+@router.get("/", response_model=APIResponse[PaginatedResponse[AlertResponse]])
 def get_alerts(db: DB, pagination: PaginationDep):
     total, items = alert_service.get_active_alerts(db, pagination)
     
@@ -35,7 +34,7 @@ def get_alerts(db: DB, pagination: PaginationDep):
 
 
 
-@router.get("/mySubscriptions")
+@router.get("/mySubscriptions", response_model=APIResponse[PaginatedResponse[AlertSubscriptionResponse]])
 def get_my_alert_subscriptions (db:DB,pagination: PaginationDep,currentUser: CurrentUser):
     total,items = alert_service.get_my_subscriptions(db,currentUser.id,pagination)
 
@@ -51,7 +50,7 @@ def get_my_alert_subscriptions (db:DB,pagination: PaginationDep,currentUser: Cur
 
     return success_response(data=paginated_data, message="Subscriptions Retrieved")
 
-@router.post("/subscriptions")
+@router.post("/subscriptions", response_model=APIResponse[AlertSubscriptionResponse])
 def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCreate):
     subscription = alert_service.create_subscription(db,currentUser.id,payload)
     return success_response(
@@ -59,19 +58,9 @@ def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCrea
         message="Subscribed to area successfully!"
     )
 
-@router.get("/test-weather")
-async def test_weather_api(lat: float = 31.9038, lng: float = 35.2034):
-    """
-    Temporary endpoint just to test OpenWeatherMap!
-    Default coordinates are roughly near Ramallah.
-    """
-    # Call your new function!
-    weather_data = await get_weather_conditions(lat, lng)
-    return {"weather": weather_data}
 
 
-
-@router.delete("/subscriptions/{subscription_id}")
+@router.delete("/subscriptions/{subscription_id}", response_model=APIResponse[None])
 def delete_alert_subscription(
     subscription_id: UUID, db: DB, current_user: CurrentUser):
     alert_service.delete_subscription(db, current_user.id, subscription_id)
@@ -83,7 +72,7 @@ def delete_alert_subscription(
 
 
 
-@router.get("/{alert_id}")
+@router.get("/{alert_id}", response_model=APIResponse[AlertResponse])
 def get_alert_by_id (db:DB,alert_id: UUID):
     alert = alert_service.get_alert_by_id(db,alert_id)
 

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, field_validator
+from uuid import UUID
 import re
 
 
@@ -34,6 +35,18 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class AccessTokenResponse(BaseModel):
+    """Returned by /refresh — no new refresh token issued."""
+    access_token: str
+    token_type: str = "bearer"
+
+
+class RegisteredUserResponse(BaseModel):
+    id: UUID
+    email: str
+    username: str
 
 
 class RefreshRequest(BaseModel):

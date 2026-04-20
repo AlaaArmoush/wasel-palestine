@@ -15,13 +15,13 @@ from app.core.security import (
 )
 from app.db.session import get_db
 from app.models.user import User, RefreshToken
-from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest
-from app.utils.responses import success_response
+from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, TokenResponse, RegisteredUserResponse, AccessTokenResponse
+from app.utils.responses import success_response, APIResponse
 
 router = APIRouter()
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=APIResponse[RegisteredUserResponse])
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -49,7 +49,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/login")
+@router.post("/login", response_model=APIResponse[TokenResponse])
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
 
@@ -81,7 +81,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=APIResponse[AccessTokenResponse])
 def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=401,
@@ -127,7 +127,7 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=APIResponse[None])
 def logout(payload: RefreshRequest, db: Session = Depends(get_db)):
     token_hash = hash_token(payload.refresh_token)
 

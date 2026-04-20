@@ -5,13 +5,13 @@ from app.models.user import UserRole
 from app.schemas.user import UserOut, UserRoleUpdate, UserUpdate
 from app.services import users as service
 from app.utils.pagination import PaginatedResponse, PaginationDep
-from app.utils.responses import success_response
+from app.utils.responses import success_response, APIResponse
 from uuid import UUID
 
 router = APIRouter()
 
 
-@router.get("/me")
+@router.get("/me", response_model=APIResponse[UserOut])
 def get_own_profile(current_user: CurrentUser):
     user = service.get_own_profile(current_user)
     return success_response(
@@ -19,7 +19,7 @@ def get_own_profile(current_user: CurrentUser):
     )
 
 
-@router.patch("/me")
+@router.patch("/me", response_model=APIResponse[UserOut])
 def update_own_profile(db: DB, current_user: CurrentUser, payload: UserUpdate):
     updated_user = service.update_own_profile(db, current_user, payload)
     return success_response(
@@ -27,13 +27,13 @@ def update_own_profile(db: DB, current_user: CurrentUser, payload: UserUpdate):
     )
 
 
-@router.get("/{user_id}", dependencies=[AdminOnly])
+@router.get("/{user_id}", dependencies=[AdminOnly], response_model=APIResponse[UserOut])
 def get_user_by_id(user_id: UUID, db: DB):
     user = service.get_user_by_id(db, user_id)
     return success_response(data=UserOut.model_validate(user), message="User Retrieved")
 
 
-@router.patch("/{user_id}/role", dependencies=[AdminOnly])
+@router.patch("/{user_id}/role", dependencies=[AdminOnly], response_model=APIResponse[UserOut])
 def update_user_role(user_id: UUID, payload: UserRoleUpdate, db: DB):
     user = service.update_user_role(db, user_id, payload)
     return success_response(
@@ -42,7 +42,7 @@ def update_user_role(user_id: UUID, payload: UserRoleUpdate, db: DB):
     )
 
 
-@router.get("/", dependencies=[AdminOnly])
+@router.get("/", dependencies=[AdminOnly], response_model=APIResponse[PaginatedResponse[UserOut]])
 def list_users(
     db: DB,
     pagination: PaginationDep,
