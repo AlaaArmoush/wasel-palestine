@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from app.schemas.reports import ReportCreate
-from app.models.report import Report, ReportCategory, ReportStatus, ModerationLog
+from app.models.report import Report, ReportCategory, ReportStatus, ModerationLog, ReportVote
 from fastapi import HTTPException
 from app.utils.geo import haversine_distance
 
@@ -193,3 +193,55 @@ def mark_report_duplicate(
     db.commit()
     db.refresh(report)
     return report
+
+
+def vote_report(db: Session, report_id: UUID, user_id: UUID, is_upvote: bool):
+    report = get_report_by_id(db, report_id)
+
+    # Prevent authors from voting on their own report
+    if report.author_id == user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot vote on your own report",
+        )
+
+    existing_vote = (
+        db.query(ReportVote)
+        .filter(ReportVote.report_id == report_id, ReportVote.user_id == user_id)
+        .first()
+    )
+
+    if existing_vote:
+        if existing_vote.is_upvote == is_upvote:
+            raise HTTPException(
+                status_code=409,
+                detail="You have already cast this vote on the report",
+            )
+        # Flip the vote: reverse the previous contribution and apply the new one
+        delta = 2 if is_upvote else -2
+        existing_vote.is_upvote = is_upvote
+        report.confidence_score += delta
+        db.add(existing_vote)
+    else:
+        vote = ReportVote(
+            report_id=report_id,
+            user_id=user_id,
+            is_upvote=is_upvote,
+        )
+        report.confidence_score += 1 if is_upvote else -1
+        db.add(vote)
+        existing_vote = vote
+
+    db.add(report)
+    db.commit()
+    db.refresh(existing_vote)
+    db.refresh(report)
+
+    return existing_vote, report
+
+
+def list_moderation_logs(db: Session, pagination):
+    query = db.query(ModerationLog).order_by(ModerationLog.created_at.desc())
+    total = query.count()
+    logs = query.offset(pagination.offset).limit(pagination.page_size).all()
+    return logs, total

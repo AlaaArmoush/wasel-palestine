@@ -12,11 +12,15 @@ from app.schemas.reports import (
     ReportCreate,
     ReportReject,
     ReportMarkDuplicate,
+    VoteCreate,
+    VoteOut,
+    ModerationLogOut,
 )
 import app.services.reports as service
 from app.core.dependencies import DB, ModeratorOrAdmin, CurrentUser
 
 router = APIRouter()
+moderation_router = APIRouter()
 
 
 @router.get("/", dependencies= [ModeratorOrAdmin])
@@ -108,4 +112,45 @@ def mark_report_duplicate(
     return success_response(
         data=ReportOut.model_validate(report).model_dump(),
         message="Report marked as duplicate successfully"
+    )
+
+
+@router.post("/{report_id}/vote", status_code=status.HTTP_201_CREATED)
+def vote_on_report(
+    report_id: UUID,
+    payload: VoteCreate,
+    db: DB,
+    current_user: CurrentUser,
+):
+    vote, report = service.vote_report(db, report_id, current_user.id, payload.is_upvote)
+    return success_response(
+        data=VoteOut(
+            **{
+                "id": vote.id,
+                "report_id": vote.report_id,
+                "user_id": vote.user_id,
+                "is_upvote": vote.is_upvote,
+                "created_at": vote.created_at,
+                "confidence_score": report.confidence_score,
+            }
+        ).model_dump(),
+        message="Vote cast successfully",
+    )
+
+
+@moderation_router.get("/logs", dependencies=[AdminOnly])
+def list_moderation_logs(
+    db: DB,
+    pagination: PaginationDep,
+):
+    logs, total = service.list_moderation_logs(db, pagination)
+
+    return success_response(
+        data={
+            "items": [ModerationLogOut.model_validate(log).model_dump() for log in logs],
+            "total": total,
+            "page": pagination.page,
+            "page_size": pagination.page_size,
+        },
+        message="Moderation logs retrieved",
     )
