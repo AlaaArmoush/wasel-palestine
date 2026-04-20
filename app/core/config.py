@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     OPENWEATHER_API_KEY: str = ""
     OPENROUTESERVICE_API_KEY: str = ""
     APP_ENV: str = "development"
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     model_config = SettingsConfigDict(
         env_file=".env",
