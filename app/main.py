@@ -3,7 +3,9 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 from app.api.v1.router import api_router
+from app.utils.responses import APIResponse
 
 app = FastAPI(
     title="Wasel Palestine API",
@@ -47,7 +49,11 @@ async def not_found_handler(request: Request, exc):
 app.include_router(api_router, prefix="/api/v1")
 
 
-@app.get("/health")
+class HealthData(BaseModel):
+    version: str
+
+
+@app.get("/health", response_model=APIResponse[HealthData], tags=["Health"])
 def health_check():
     return {"success": True, "message": "ok", "data": {"version": "1.0.0"}}
 

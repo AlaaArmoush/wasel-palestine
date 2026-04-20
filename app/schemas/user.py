@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 import re
 
-from pydantic import BaseModel, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
 
 from app.db.base import Base
 from app.models.user import UserRole
@@ -10,7 +10,7 @@ from app.models.user import UserRole
 
 class UserOut(BaseModel):
     id: UUID
-    email: str
+    email: EmailStr
     username: str
     full_name: str | None
     role: UserRole

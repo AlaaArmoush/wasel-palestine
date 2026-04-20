@@ -37,5 +37,6 @@ class AlertSubscriptionResponse(BaseModel):
 class AlertSubscriptionCreate(BaseModel):
     latitude: float
     longitude: float
-    radius_km: float = 10.0  # Default
+    radius_km: float = 10.0
+    incident_category: Optional[str] = None  # filter alerts by incident type
 

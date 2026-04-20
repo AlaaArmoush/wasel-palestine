@@ -4,7 +4,7 @@ from typing import Optional
 
 from app.core.dependencies import DB, ModeratorOrAdmin, AdminOnly
 from app.utils.pagination import PaginationDep, PaginatedResponse
-from app.utils.responses import success_response
+from app.utils.responses import success_response, APIResponse
 from app.models.report import ReportCategory, ReportStatus
 from app.schemas.reports import (
     ReportCreateOut,
@@ -23,7 +23,7 @@ router = APIRouter()
 moderation_router = APIRouter()
 
 
-@router.get("/", dependencies= [ModeratorOrAdmin])
+@router.get("/", dependencies=[ModeratorOrAdmin], response_model=APIResponse[PaginatedResponse[ReportOut]])
 def list_reports(
     db: DB,
     pagination: PaginationDep,
@@ -46,7 +46,7 @@ def list_reports(
         message="Reports retrieved"
     )
 
-@router.get("/{id}")
+@router.get("/{id}", response_model=APIResponse[ReportOut])
 def get_report(
     id: UUID,
     db: DB,
@@ -58,7 +58,7 @@ def get_report(
         message="Report retrieved"
     )
 
-@router.post("/")
+@router.post("/", response_model=APIResponse[ReportCreateOut])
 def submit_report(
     payload: ReportCreate,
     db: DB,
@@ -79,7 +79,7 @@ def delete_report(report_id: UUID, db: DB):
     service.delete_report(db, report_id)
 
 
-@router.patch("/{report_id}/approve", dependencies=[ModeratorOrAdmin])
+@router.patch("/{report_id}/approve", dependencies=[ModeratorOrAdmin], response_model=APIResponse[ReportOut])
 def approve_report(report_id: UUID, db: DB, current_user: CurrentUser):
     report = service.approve_report(db, report_id, current_user.id)
     return success_response(
@@ -87,7 +87,7 @@ def approve_report(report_id: UUID, db: DB, current_user: CurrentUser):
         message="Report approved successfully"
     )
 
-@router.patch("/{report_id}/reject", dependencies=[ModeratorOrAdmin])
+@router.patch("/{report_id}/reject", dependencies=[ModeratorOrAdmin], response_model=APIResponse[ReportOut])
 def reject_report(report_id: UUID, payload: ReportReject, db: DB, current_user: CurrentUser):
     report = service.reject_report(db, report_id, current_user.id, payload.reason)
     return success_response(
@@ -96,7 +96,7 @@ def reject_report(report_id: UUID, payload: ReportReject, db: DB, current_user: 
     )
     
 
-@router.patch("/{report_id}/mark-duplicate", dependencies=[ModeratorOrAdmin])
+@router.patch("/{report_id}/mark-duplicate", dependencies=[ModeratorOrAdmin], response_model=APIResponse[ReportOut])
 def mark_report_duplicate(
     report_id: UUID,
     payload: ReportMarkDuplicate,
@@ -115,7 +115,7 @@ def mark_report_duplicate(
     )
 
 
-@router.post("/{report_id}/vote", status_code=status.HTTP_201_CREATED)
+@router.post("/{report_id}/vote", status_code=status.HTTP_201_CREATED, response_model=APIResponse[VoteOut])
 def vote_on_report(
     report_id: UUID,
     payload: VoteCreate,
@@ -138,7 +138,7 @@ def vote_on_report(
     )
 
 
-@moderation_router.get("/logs", dependencies=[AdminOnly])
+@moderation_router.get("/logs", dependencies=[AdminOnly], response_model=APIResponse[PaginatedResponse[ModerationLogOut]])
 def list_moderation_logs(
     db: DB,
     pagination: PaginationDep,

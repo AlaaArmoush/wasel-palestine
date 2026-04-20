@@ -4,14 +4,14 @@ from uuid import UUID
 from app.core.dependencies import DB, AdminOnly, CurrentUser, ModeratorOrAdmin
 from app.schemas.checkpoint import CheckpointOut, CheckpointDetailOut, CheckpointStatusHistoryOut, CheckpointCreate, CheckpointUpdate, CheckpointStatusUpdate
 from app.services import checkpoints as service
-from app.utils.responses import success_response
+from app.utils.responses import success_response, APIResponse
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.models.checkpoint import CheckpointStatus
 
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/", response_model=APIResponse[PaginatedResponse[CheckpointOut]])
 def get_checkpoints(
     db: DB, 
     pagination: PaginationDep,
@@ -37,7 +37,7 @@ def get_checkpoints(
     )
 
 
-@router.post("/", dependencies=[AdminOnly], status_code=201)
+@router.post("/", dependencies=[AdminOnly], status_code=201, response_model=APIResponse[CheckpointDetailOut])
 def create_checkpoint(
     payload: CheckpointCreate, 
     db: DB,
@@ -54,7 +54,7 @@ def create_checkpoint(
     )
 
 
-@router.get("/{checkpoint_id}")
+@router.get("/{checkpoint_id}", response_model=APIResponse[CheckpointDetailOut])
 def get_checkpoint(checkpoint_id: UUID, db: DB):
     checkpoint = service.get_checkpoint_by_id(db, checkpoint_id)
     return success_response(
@@ -63,7 +63,7 @@ def get_checkpoint(checkpoint_id: UUID, db: DB):
     )
 
 
-@router.patch("/{checkpoint_id}", dependencies=[AdminOnly])
+@router.patch("/{checkpoint_id}", dependencies=[AdminOnly], response_model=APIResponse[CheckpointDetailOut])
 def update_checkpoint(
     checkpoint_id: UUID,
     payload: CheckpointUpdate,
@@ -82,7 +82,7 @@ def update_checkpoint(
     )
 
 
-@router.patch("/{checkpoint_id}/status", dependencies=[ModeratorOrAdmin])
+@router.patch("/{checkpoint_id}/status", dependencies=[ModeratorOrAdmin], response_model=APIResponse[CheckpointDetailOut])
 def update_checkpoint_status(
     checkpoint_id: UUID,
     payload: CheckpointStatusUpdate,
@@ -101,7 +101,7 @@ def update_checkpoint_status(
     )
 
 
-@router.get("/{id}/history", description="get status change history")
+@router.get("/{id}/history", description="Get status change history", response_model=APIResponse[PaginatedResponse[CheckpointStatusHistoryOut]])
 def get_checkpoint_history(
     id: UUID, 
     db: DB,
@@ -127,7 +127,7 @@ def get_checkpoint_history(
 
 
 
-@router.delete("/{checkpoint_id}", dependencies=[AdminOnly])
+@router.delete("/{checkpoint_id}", dependencies=[AdminOnly], response_model=APIResponse[None])
 def delete_checkpoint(
     checkpoint_id: UUID,
     db: DB
