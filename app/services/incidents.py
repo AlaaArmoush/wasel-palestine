@@ -1,6 +1,7 @@
 from app.models.alert import Alert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
+from sqlalchemy import text
 from app.models.incident import Incident, IncidentType, IncidentSeverity, IncidentStatus
 from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentOut
 from app.utils.geo import haversine_distance
@@ -23,26 +24,57 @@ def get_incident_by_id(db: Session, incident_id: UUID):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
     return incident
 
-def get_all_incidents(db: Session, skip: int, limit: int,
+def get_all_incidents(
+    db: Session,
+    skip: int,
+    limit: int,
     incident_type: IncidentType | None = None,
     severity: IncidentSeverity | None = None,
     status: IncidentStatus | None = None,
     lat: float | None = None,
     lng: float | None = None,
-    radius_km: float | None = None
+    radius_km: float | None = None,
 ):
-    query = db.query(Incident)
+    # Build a dynamic parameterised WHERE clause with raw SQL
+    conditions = ["1=1"]
+    params: dict = {"limit": limit, "skip": skip}
 
     if incident_type:
-        query = query.filter(Incident.incident_type == incident_type)
+        conditions.append("incident_type = :incident_type")
+        params["incident_type"] = incident_type.value
+
     if severity:
-        query = query.filter(Incident.severity == severity)
+        conditions.append("severity = :severity")
+        params["severity"] = severity.value
+
     if status:
-        query = query.filter(Incident.status == status)
+        conditions.append("status = :status")
+        params["status"] = status.value
 
-    total = query.count()
-    items = query.order_by(Incident.created_at.desc()).offset(skip).limit(limit).all()
+    where = " AND ".join(conditions)
 
+    total = db.execute(
+        text(f"SELECT COUNT(*) FROM incidents WHERE {where}"),
+        params,
+    ).scalar()
+
+    rows = db.execute(
+        text(
+            f"SELECT id FROM incidents WHERE {where}"
+            f" ORDER BY created_at DESC LIMIT :limit OFFSET :skip"
+        ),
+        params,
+    ).mappings().all()
+
+    ids = [row["id"] for row in rows]
+    if not ids:
+        return [], total
+
+    # Reload as ORM objects so relationships and Pydantic serialisation work
+    items = db.query(Incident).filter(Incident.id.in_(ids)).all()
+    items.sort(key=lambda i: [str(r["id"]) for r in rows].index(str(i.id)))
+
+    # Geo-radius post-filter stays in Python (haversine is application logic)
     if lat and lng and radius_km:
         items = [i for i in items if haversine_distance(lat, lng, i.latitude, i.longitude) <= radius_km]
 

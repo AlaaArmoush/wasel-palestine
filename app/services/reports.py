@@ -2,6 +2,7 @@ from uuid import UUID
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.schemas.reports import ReportCreate
 from app.models.report import Report, ReportCategory, ReportStatus, ModerationLog, ReportVote
 from fastapi import HTTPException
@@ -36,12 +37,17 @@ def list_reports(
 
 
 def get_report_by_id(db: Session, report_id: UUID):
-    report = db.query(Report).filter(Report.id == report_id).first()
-    
-    if not report:
+    # Raw SQL existence check
+    row = db.execute(
+        text("SELECT id FROM reports WHERE id = :id"),
+        {"id": str(report_id)}
+    ).first()
+
+    if not row:
         raise HTTPException(status_code=404, detail="Report not found")
-    
-    return report
+
+    # Reload as ORM object so relationships and Pydantic serialisation work
+    return db.query(Report).filter(Report.id == report_id).first()
 
 def check_abuse(db: Session, user_id: UUID) -> bool:
     one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -241,7 +247,29 @@ def vote_report(db: Session, report_id: UUID, user_id: UUID, is_upvote: bool):
 
 
 def list_moderation_logs(db: Session, pagination):
-    query = db.query(ModerationLog).order_by(ModerationLog.created_at.desc())
-    total = query.count()
-    logs = query.offset(pagination.offset).limit(pagination.page_size).all()
+    # Raw SQL count
+    total = db.execute(
+        text("SELECT COUNT(*) FROM moderation_logs")
+    ).scalar()
+
+    # Raw SQL paginated fetch
+    rows = db.execute(
+        text("""
+            SELECT id FROM moderation_logs
+            ORDER BY created_at DESC
+            LIMIT :limit OFFSET :offset
+        """),
+        {"limit": pagination.page_size, "offset": pagination.offset},
+    ).mappings().all()
+
+    # Reload as ORM objects to keep Pydantic serialisation clean
+    ids = [row["id"] for row in rows]
+    if not ids:
+        return [], total
+
+    logs = db.query(ModerationLog).filter(ModerationLog.id.in_(ids)).all()
+    # Restore ORDER BY ordering lost by IN query
+    id_index = {str(log.id): i for i, log in enumerate(logs)}
+    logs.sort(key=lambda log: [str(r["id"]) for r in rows].index(str(log.id)))
+
     return logs, total
