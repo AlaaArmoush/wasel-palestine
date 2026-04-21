@@ -26,6 +26,8 @@ moderation_router = APIRouter()
 
 @router.get(
     "/",
+    summary="List reports",
+    description="Moderator or admin only. Paginated list of all reports. Filterable by status, category, and author.",
     dependencies=[ModeratorOrAdmin],
     response_model=APIResponse[PaginatedResponse[ReportOut]],
     responses={
@@ -57,6 +59,8 @@ def list_reports(
 
 @router.get(
     "/{id}",
+    summary="Get report",
+    description="Retrieve full details of a single report by UUID.",
     response_model=APIResponse[ReportOut],
     responses={404: {"model": ErrorResponse, "description": "Report not found"}},
 )
@@ -73,6 +77,8 @@ def get_report(
 
 @router.post(
     "/",
+    summary="Submit report",
+    description="Authenticated users can submit a community report. Rate-limited to 10 per hour. Returns a potential duplicate ID if a nearby similar report exists.",
     response_model=APIResponse[ReportCreateOut],
     responses={
         401: {"model": ErrorResponse, "description": "Not authenticated"},
@@ -96,6 +102,8 @@ def submit_report(
 
 @router.delete(
     "/{report_id}",
+    summary="Delete report",
+    description="Admin only. Permanently removes a report and its associated moderation history.",
     dependencies=[AdminOnly],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
@@ -110,6 +118,8 @@ def delete_report(report_id: UUID, db: DB):
 
 @router.patch(
     "/{report_id}/approve",
+    summary="Approve report",
+    description="Moderator or admin only. Approves a pending report and logs the moderation action.",
     dependencies=[ModeratorOrAdmin],
     response_model=APIResponse[ReportOut],
     responses={
@@ -128,6 +138,8 @@ def approve_report(report_id: UUID, db: DB, current_user: CurrentUser):
 
 @router.patch(
     "/{report_id}/reject",
+    summary="Reject report",
+    description="Moderator or admin only. Rejects a pending report with a mandatory reason.",
     dependencies=[ModeratorOrAdmin],
     response_model=APIResponse[ReportOut],
     responses={
@@ -147,6 +159,8 @@ def reject_report(report_id: UUID, payload: ReportReject, db: DB, current_user: 
 
 @router.patch(
     "/{report_id}/mark-duplicate",
+    summary="Mark report as duplicate",
+    description="Moderator or admin only. Links a pending report to an existing original report and marks it as duplicate.",
     dependencies=[ModeratorOrAdmin],
     response_model=APIResponse[ReportOut],
     responses={
@@ -176,6 +190,8 @@ def mark_report_duplicate(
 
 @router.post(
     "/{report_id}/vote",
+    summary="Vote on report",
+    description="Authenticated users can upvote or downvote a report to adjust its confidence score. Cannot vote on your own report. Changing your vote is allowed.",
     status_code=status.HTTP_201_CREATED,
     response_model=APIResponse[VoteOut],
     responses={
@@ -209,6 +225,8 @@ def vote_on_report(
 
 @moderation_router.get(
     "/logs",
+    summary="List moderation logs",
+    description="Admin only. Paginated log of all moderation actions across reports.",
     dependencies=[AdminOnly],
     response_model=APIResponse[PaginatedResponse[ModerationLogOut]],
     responses={

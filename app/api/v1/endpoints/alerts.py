@@ -13,7 +13,12 @@ from app.core.dependencies import CurrentUser
 
 router = APIRouter()
 
-@router.get("/", response_model=APIResponse[PaginatedResponse[AlertResponse]])
+@router.get(
+    "/",
+    summary="List active alerts",
+    description="Retrieve a paginated list of currently active system alerts.",
+    response_model=APIResponse[PaginatedResponse[AlertResponse]],
+)
 def get_alerts(db: DB, pagination: PaginationDep):
     total, items = alert_service.get_active_alerts(db, pagination)
     
@@ -37,6 +42,8 @@ def get_alerts(db: DB, pagination: PaginationDep):
 
 @router.get(
     "/mySubscriptions",
+    summary="List my subscriptions",
+    description="Authenticated users can view their own active alert subscriptions.",
     response_model=APIResponse[PaginatedResponse[AlertSubscriptionResponse]],
     responses={401: {"model": ErrorResponse, "description": "Not authenticated"}},
 )
@@ -57,6 +64,8 @@ def get_my_alert_subscriptions (db:DB,pagination: PaginationDep,currentUser: Cur
 
 @router.post(
     "/subscriptions",
+    summary="Create alert subscription",
+    description="Authenticated users can subscribe to alerts for a geographic area and optional incident category.",
     response_model=APIResponse[AlertSubscriptionResponse],
     responses={401: {"model": ErrorResponse, "description": "Not authenticated"}},
 )
@@ -71,6 +80,8 @@ def create_alert_sub(db:DB,currentUser:CurrentUser,payload:AlertSubscriptionCrea
 
 @router.delete(
     "/subscriptions/{subscription_id}",
+    summary="Delete alert subscription",
+    description="Authenticated users can cancel one of their own alert subscriptions.",
     response_model=APIResponse[None],
     responses={
         401: {"model": ErrorResponse, "description": "Not authenticated"},
@@ -90,6 +101,8 @@ def delete_alert_subscription(
 
 @router.get(
     "/{alert_id}",
+    summary="Get alert",
+    description="Retrieve full details of a specific alert by UUID.",
     response_model=APIResponse[AlertResponse],
     responses={404: {"model": ErrorResponse, "description": "Alert not found"}},
 )

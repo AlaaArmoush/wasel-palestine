@@ -12,6 +12,8 @@ router = APIRouter()
 
 @router.post(
     "/",
+    summary="Create incident",
+    description="Authenticated users can report a new incident. Starts with 'active' status.",
     status_code=status.HTTP_201_CREATED,
     response_model=APIResponse[IncidentOut],
     responses={401: {"model": ErrorResponse, "description": "Not authenticated"}},
@@ -25,6 +27,8 @@ def create_incident(payload: IncidentCreate, db: DB, current_user: CurrentUser):
 
 @router.get(
     "/{incident_id}",
+    summary="Get incident",
+    description="Retrieve full details of a single incident by UUID.",
     response_model=APIResponse[IncidentOut],
     responses={404: {"model": ErrorResponse, "description": "Incident not found"}},
 )
@@ -35,7 +39,12 @@ def get_incident(incident_id: UUID, db: DB):
         message="Incident retrieved"
     )
 
-@router.get("/", response_model=APIResponse[PaginatedResponse[IncidentOut]])
+@router.get(
+    "/",
+    summary="List incidents",
+    description="Paginated list of incidents. Filterable by type, severity, status, and geo-radius.",
+    response_model=APIResponse[PaginatedResponse[IncidentOut]],
+)
 def list_incidents(
     db: DB, pagination: PaginationDep,
     incident_type: IncidentType | None = None,
@@ -57,6 +66,8 @@ def list_incidents(
 
 @router.patch(
     "/{incident_id}",
+    summary="Update incident",
+    description="Moderator or admin only. Update editable fields of an incident.",
     dependencies=[ModeratorOrAdmin],
     response_model=APIResponse[IncidentOut],
     responses={
@@ -79,6 +90,8 @@ def update_incident(
 
 @router.patch(
     "/{incident_id}/resolve",
+    summary="Resolve incident",
+    description="Moderator or admin only. Marks an incident as resolved and records the resolution timestamp.",
     dependencies=[ModeratorOrAdmin],
     response_model=APIResponse[IncidentOut],
     responses={
@@ -98,6 +111,8 @@ def resolve_incident(incident_id: UUID, db: DB):
 
 @router.patch(
     "/{incident_id}/verify",
+    summary="Verify incident",
+    description="Moderator or admin only. Marks an incident as verified, sets verification metadata, and triggers alert creation.",
     dependencies=[ModeratorOrAdmin],
     response_model=APIResponse[IncidentOut],
     responses={
@@ -117,6 +132,8 @@ def verify_incident(incident_id: UUID, db: DB, current_user: CurrentUser):
 
 @router.delete(
     "/{incident_id}",
+    summary="Delete incident",
+    description="Admin only. Permanently removes an incident and nullifies all linked alerts.",
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[AdminOnly],
     responses={

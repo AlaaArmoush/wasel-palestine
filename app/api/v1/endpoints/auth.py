@@ -24,6 +24,8 @@ router = APIRouter()
 
 @router.post(
     "/register",
+    summary="Register",
+    description="Create a new user account. Returns the created user's basic profile.",
     status_code=status.HTTP_201_CREATED,
     response_model=APIResponse[RegisteredUserResponse],
     responses={
@@ -59,6 +61,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post(
     "/login",
+    summary="Login",
+    description="Authenticate with email and password. Returns an access token and a refresh token.",
     response_model=APIResponse[TokenResponse],
     responses={
         401: {"model": ErrorResponse, "description": "Invalid credentials"},
@@ -98,6 +102,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post(
     "/refresh",
+    summary="Refresh access token",
+    description="Exchange a valid refresh token for a new access token. The refresh token is not rotated.",
     response_model=APIResponse[AccessTokenResponse],
     responses={
         401: {"model": ErrorResponse, "description": "Invalid or expired refresh token"},
@@ -148,7 +154,12 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/logout", response_model=APIResponse[None])
+@router.post(
+    "/logout",
+    summary="Logout",
+    description="Revoke the provided refresh token, ending the current session.",
+    response_model=APIResponse[None],
+)
 def logout(payload: RefreshRequest, db: Session = Depends(get_db)):
     token_hash = hash_token(payload.refresh_token)
 

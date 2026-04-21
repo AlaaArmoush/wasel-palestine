@@ -14,6 +14,8 @@ router = APIRouter()
 
 @router.get(
     "/me",
+    summary="Get own profile",
+    description="Returns the full profile of the currently authenticated user.",
     response_model=APIResponse[UserOut],
     responses={401: {"model": ErrorResponse, "description": "Not authenticated"}},
 )
@@ -26,6 +28,8 @@ def get_own_profile(current_user: CurrentUser):
 
 @router.patch(
     "/me",
+    summary="Update own profile",
+    description="Update the authenticated user's full name or username.",
     response_model=APIResponse[UserOut],
     responses={
         400: {"model": ErrorResponse, "description": "Username already taken"},
@@ -41,6 +45,8 @@ def update_own_profile(db: DB, current_user: CurrentUser, payload: UserUpdate):
 
 @router.get(
     "/{user_id}",
+    summary="Get user by ID",
+    description="Admin only. Retrieve any user's full profile by their UUID.",
     dependencies=[AdminOnly],
     response_model=APIResponse[UserOut],
     responses={
@@ -56,6 +62,8 @@ def get_user_by_id(user_id: UUID, db: DB):
 
 @router.patch(
     "/{user_id}/role",
+    summary="Update user role",
+    description="Admin only. Change a user's role (e.g. promote to moderator or admin).",
     dependencies=[AdminOnly],
     response_model=APIResponse[UserOut],
     responses={
@@ -74,6 +82,8 @@ def update_user_role(user_id: UUID, payload: UserRoleUpdate, db: DB):
 
 @router.get(
     "/",
+    summary="List users",
+    description="Admin only. Paginated list of all users. Filterable by role and active status.",
     dependencies=[AdminOnly],
     response_model=APIResponse[PaginatedResponse[UserOut]],
     responses={
@@ -100,6 +110,8 @@ def list_users(
 
 @router.delete(
     "/{user_id}",
+    summary="Deactivate user",
+    description="Admin only. Deactivates a user account (soft delete — does not remove from database).",
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[AdminOnly],
     responses={

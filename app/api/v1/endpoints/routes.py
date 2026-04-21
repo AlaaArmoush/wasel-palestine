@@ -7,7 +7,12 @@ from app.services import routes as service
 router = APIRouter()
 
 
-@router.post("/estimate", response_model=APIResponse[RouteResponse])
+@router.post(
+    "/estimate",
+    summary="Estimate route",
+    description="Returns estimated distance, duration, nearby checkpoints, and weather conditions between two coordinates. Results are cached for performance.",
+    response_model=APIResponse[RouteResponse],
+)
 async def estimate_route(payload: RouteRequest, db: DB):
     result = await service.estimate_route(db, payload)
     return success_response(
