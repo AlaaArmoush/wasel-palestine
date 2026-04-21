@@ -16,12 +16,20 @@ from app.core.security import (
 from app.db.session import get_db
 from app.models.user import User, RefreshToken
 from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, TokenResponse, RegisteredUserResponse, AccessTokenResponse
+from app.schemas.common import ErrorResponse
 from app.utils.responses import success_response, APIResponse
 
 router = APIRouter()
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=APIResponse[RegisteredUserResponse])
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    response_model=APIResponse[RegisteredUserResponse],
+    responses={
+        400: {"model": ErrorResponse, "description": "Email or username already taken"},
+    },
+)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -49,7 +57,14 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=APIResponse[TokenResponse])
+@router.post(
+    "/login",
+    response_model=APIResponse[TokenResponse],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+        403: {"model": ErrorResponse, "description": "Account is deactivated"},
+    },
+)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
 
@@ -81,7 +96,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/refresh", response_model=APIResponse[AccessTokenResponse])
+@router.post(
+    "/refresh",
+    response_model=APIResponse[AccessTokenResponse],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or expired refresh token"},
+    },
+)
 def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=401,

@@ -5,6 +5,7 @@ from typing import Optional
 from app.core.dependencies import DB, ModeratorOrAdmin, AdminOnly
 from app.utils.pagination import PaginationDep, PaginatedResponse
 from app.utils.responses import success_response, APIResponse
+from app.schemas.common import ErrorResponse
 from app.models.report import ReportCategory, ReportStatus
 from app.schemas.reports import (
     ReportCreateOut,
@@ -23,7 +24,15 @@ router = APIRouter()
 moderation_router = APIRouter()
 
 
-@router.get("/", dependencies=[ModeratorOrAdmin], response_model=APIResponse[PaginatedResponse[ReportOut]])
+@router.get(
+    "/",
+    dependencies=[ModeratorOrAdmin],
+    response_model=APIResponse[PaginatedResponse[ReportOut]],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Moderator or admin only"},
+    },
+)
 def list_reports(
     db: DB,
     pagination: PaginationDep,
@@ -46,7 +55,11 @@ def list_reports(
         message="Reports retrieved"
     )
 
-@router.get("/{id}", response_model=APIResponse[ReportOut])
+@router.get(
+    "/{id}",
+    response_model=APIResponse[ReportOut],
+    responses={404: {"model": ErrorResponse, "description": "Report not found"}},
+)
 def get_report(
     id: UUID,
     db: DB,
@@ -58,7 +71,14 @@ def get_report(
         message="Report retrieved"
     )
 
-@router.post("/", response_model=APIResponse[ReportCreateOut])
+@router.post(
+    "/",
+    response_model=APIResponse[ReportCreateOut],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        429: {"model": ErrorResponse, "description": "Too many reports submitted recently"},
+    },
+)
 def submit_report(
     payload: ReportCreate,
     db: DB,
@@ -74,12 +94,31 @@ def submit_report(
         message="Report submitted successfully"
     )
 
-@router.delete("/{report_id}", dependencies=[AdminOnly], status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{report_id}",
+    dependencies=[AdminOnly],
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin only"},
+        404: {"model": ErrorResponse, "description": "Report not found"},
+    },
+)
 def delete_report(report_id: UUID, db: DB):
     service.delete_report(db, report_id)
 
 
-@router.patch("/{report_id}/approve", dependencies=[ModeratorOrAdmin], response_model=APIResponse[ReportOut])
+@router.patch(
+    "/{report_id}/approve",
+    dependencies=[ModeratorOrAdmin],
+    response_model=APIResponse[ReportOut],
+    responses={
+        400: {"model": ErrorResponse, "description": "Report is not pending"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Moderator or admin only"},
+        404: {"model": ErrorResponse, "description": "Report not found"},
+    },
+)
 def approve_report(report_id: UUID, db: DB, current_user: CurrentUser):
     report = service.approve_report(db, report_id, current_user.id)
     return success_response(
@@ -87,7 +126,17 @@ def approve_report(report_id: UUID, db: DB, current_user: CurrentUser):
         message="Report approved successfully"
     )
 
-@router.patch("/{report_id}/reject", dependencies=[ModeratorOrAdmin], response_model=APIResponse[ReportOut])
+@router.patch(
+    "/{report_id}/reject",
+    dependencies=[ModeratorOrAdmin],
+    response_model=APIResponse[ReportOut],
+    responses={
+        400: {"model": ErrorResponse, "description": "Report is not pending"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Moderator or admin only"},
+        404: {"model": ErrorResponse, "description": "Report not found"},
+    },
+)
 def reject_report(report_id: UUID, payload: ReportReject, db: DB, current_user: CurrentUser):
     report = service.reject_report(db, report_id, current_user.id, payload.reason)
     return success_response(
@@ -96,7 +145,17 @@ def reject_report(report_id: UUID, payload: ReportReject, db: DB, current_user: 
     )
     
 
-@router.patch("/{report_id}/mark-duplicate", dependencies=[ModeratorOrAdmin], response_model=APIResponse[ReportOut])
+@router.patch(
+    "/{report_id}/mark-duplicate",
+    dependencies=[ModeratorOrAdmin],
+    response_model=APIResponse[ReportOut],
+    responses={
+        400: {"model": ErrorResponse, "description": "Validation error (e.g. self-duplicate or rejected original)"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Moderator or admin only"},
+        404: {"model": ErrorResponse, "description": "Report not found"},
+    },
+)
 def mark_report_duplicate(
     report_id: UUID,
     payload: ReportMarkDuplicate,
@@ -115,7 +174,17 @@ def mark_report_duplicate(
     )
 
 
-@router.post("/{report_id}/vote", status_code=status.HTTP_201_CREATED, response_model=APIResponse[VoteOut])
+@router.post(
+    "/{report_id}/vote",
+    status_code=status.HTTP_201_CREATED,
+    response_model=APIResponse[VoteOut],
+    responses={
+        400: {"model": ErrorResponse, "description": "Cannot vote on your own report"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        404: {"model": ErrorResponse, "description": "Report not found"},
+        409: {"model": ErrorResponse, "description": "Already voted with this choice"},
+    },
+)
 def vote_on_report(
     report_id: UUID,
     payload: VoteCreate,
@@ -138,7 +207,15 @@ def vote_on_report(
     )
 
 
-@moderation_router.get("/logs", dependencies=[AdminOnly], response_model=APIResponse[PaginatedResponse[ModerationLogOut]])
+@moderation_router.get(
+    "/logs",
+    dependencies=[AdminOnly],
+    response_model=APIResponse[PaginatedResponse[ModerationLogOut]],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin only"},
+    },
+)
 def list_moderation_logs(
     db: DB,
     pagination: PaginationDep,
