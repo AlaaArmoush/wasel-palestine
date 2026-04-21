@@ -16,12 +16,22 @@ from app.core.security import (
 from app.db.session import get_db
 from app.models.user import User, RefreshToken
 from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, TokenResponse, RegisteredUserResponse, AccessTokenResponse
+from app.schemas.common import ErrorResponse
 from app.utils.responses import success_response, APIResponse
 
 router = APIRouter()
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=APIResponse[RegisteredUserResponse])
+@router.post(
+    "/register",
+    summary="Register",
+    description="Create a new user account. Returns the created user's basic profile.",
+    status_code=status.HTTP_201_CREATED,
+    response_model=APIResponse[RegisteredUserResponse],
+    responses={
+        400: {"model": ErrorResponse, "description": "Email or username already taken"},
+    },
+)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -49,7 +59,16 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=APIResponse[TokenResponse])
+@router.post(
+    "/login",
+    summary="Login",
+    description="Authenticate with email and password. Returns an access token and a refresh token.",
+    response_model=APIResponse[TokenResponse],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+        403: {"model": ErrorResponse, "description": "Account is deactivated"},
+    },
+)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
 
@@ -81,7 +100,15 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/refresh", response_model=APIResponse[AccessTokenResponse])
+@router.post(
+    "/refresh",
+    summary="Refresh access token",
+    description="Exchange a valid refresh token for a new access token. The refresh token is not rotated.",
+    response_model=APIResponse[AccessTokenResponse],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or expired refresh token"},
+    },
+)
 def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=401,
@@ -127,7 +154,12 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/logout", response_model=APIResponse[None])
+@router.post(
+    "/logout",
+    summary="Logout",
+    description="Revoke the provided refresh token, ending the current session.",
+    response_model=APIResponse[None],
+)
 def logout(payload: RefreshRequest, db: Session = Depends(get_db)):
     token_hash = hash_token(payload.refresh_token)
 

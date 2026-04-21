@@ -6,12 +6,19 @@ from app.schemas.user import UserOut, UserRoleUpdate, UserUpdate
 from app.services import users as service
 from app.utils.pagination import PaginatedResponse, PaginationDep
 from app.utils.responses import success_response, APIResponse
+from app.schemas.common import ErrorResponse
 from uuid import UUID
 
 router = APIRouter()
 
 
-@router.get("/me", response_model=APIResponse[UserOut])
+@router.get(
+    "/me",
+    summary="Get own profile",
+    description="Returns the full profile of the currently authenticated user.",
+    response_model=APIResponse[UserOut],
+    responses={401: {"model": ErrorResponse, "description": "Not authenticated"}},
+)
 def get_own_profile(current_user: CurrentUser):
     user = service.get_own_profile(current_user)
     return success_response(
@@ -19,7 +26,16 @@ def get_own_profile(current_user: CurrentUser):
     )
 
 
-@router.patch("/me", response_model=APIResponse[UserOut])
+@router.patch(
+    "/me",
+    summary="Update own profile",
+    description="Update the authenticated user's full name or username.",
+    response_model=APIResponse[UserOut],
+    responses={
+        400: {"model": ErrorResponse, "description": "Username already taken"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+    },
+)
 def update_own_profile(db: DB, current_user: CurrentUser, payload: UserUpdate):
     updated_user = service.update_own_profile(db, current_user, payload)
     return success_response(
@@ -27,13 +43,35 @@ def update_own_profile(db: DB, current_user: CurrentUser, payload: UserUpdate):
     )
 
 
-@router.get("/{user_id}", dependencies=[AdminOnly], response_model=APIResponse[UserOut])
+@router.get(
+    "/{user_id}",
+    summary="Get user by ID",
+    description="Admin only. Retrieve any user's full profile by their UUID.",
+    dependencies=[AdminOnly],
+    response_model=APIResponse[UserOut],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin only"},
+        404: {"model": ErrorResponse, "description": "User not found"},
+    },
+)
 def get_user_by_id(user_id: UUID, db: DB):
     user = service.get_user_by_id(db, user_id)
     return success_response(data=UserOut.model_validate(user), message="User Retrieved")
 
 
-@router.patch("/{user_id}/role", dependencies=[AdminOnly], response_model=APIResponse[UserOut])
+@router.patch(
+    "/{user_id}/role",
+    summary="Update user role",
+    description="Admin only. Change a user's role (e.g. promote to moderator or admin).",
+    dependencies=[AdminOnly],
+    response_model=APIResponse[UserOut],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin only"},
+        404: {"model": ErrorResponse, "description": "User not found"},
+    },
+)
 def update_user_role(user_id: UUID, payload: UserRoleUpdate, db: DB):
     user = service.update_user_role(db, user_id, payload)
     return success_response(
@@ -42,7 +80,17 @@ def update_user_role(user_id: UUID, payload: UserRoleUpdate, db: DB):
     )
 
 
-@router.get("/", dependencies=[AdminOnly], response_model=APIResponse[PaginatedResponse[UserOut]])
+@router.get(
+    "/",
+    summary="List users",
+    description="Admin only. Paginated list of all users. Filterable by role and active status.",
+    dependencies=[AdminOnly],
+    response_model=APIResponse[PaginatedResponse[UserOut]],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin only"},
+    },
+)
 def list_users(
     db: DB,
     pagination: PaginationDep,
@@ -60,6 +108,17 @@ def list_users(
     )
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[AdminOnly])
+@router.delete(
+    "/{user_id}",
+    summary="Deactivate user",
+    description="Admin only. Deactivates a user account (soft delete — does not remove from database).",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[AdminOnly],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin only"},
+        404: {"model": ErrorResponse, "description": "User not found"},
+    },
+)
 def deactivate_user(user_id: UUID, db: DB):
     service.deactivate_user(db, user_id)
