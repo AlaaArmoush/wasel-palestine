@@ -67,21 +67,19 @@ def detect_duplicate(
     longitude: float,
 ) -> Report | None:
     two_hours_ago = datetime.now(timezone.utc) - timedelta(hours=2)
+    lat_delta = 0.0045
+    lng_delta = 0.0045
 
-    recent_reports = db.query(Report).filter(
+    candidates = db.query(Report).filter(
         Report.category == category,
         Report.created_at >= two_hours_ago,
-        Report.status != ReportStatus.rejected
+        Report.status != ReportStatus.rejected,
+        Report.latitude.between(latitude - lat_delta, latitude + lat_delta),
+        Report.longitude.between(longitude - lng_delta, longitude + lng_delta),
     ).all()
 
-    for report in recent_reports:
-        distance = haversine_distance(
-            latitude,
-            longitude,
-            report.latitude,
-            report.longitude
-        )
-        if distance <= 0.5:
+    for report in candidates:
+        if haversine_distance(latitude, longitude, report.latitude, report.longitude) <= 0.5:
             return report
 
     return None
