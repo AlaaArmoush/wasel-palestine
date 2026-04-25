@@ -12,7 +12,6 @@ class IncidentCreate(BaseModel):
     latitude: float
     longitude: float
     location_description: str | None = None
-    checkpoint_id: UUID | None = None
 
 
 class IncidentUpdate(BaseModel):
@@ -23,7 +22,6 @@ class IncidentUpdate(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     location_description: str | None = None
-    checkpoint_id: UUID | None = None
 
 
 class IncidentOut(BaseModel):

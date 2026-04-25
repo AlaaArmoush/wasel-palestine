@@ -54,18 +54,6 @@ def get_checkpoint_history(
     
     return items, total
 
-
-
-
-
-
-
-
-
-
-
-
-
 #for post method
 def create_checkpoint(db: Session, obj_in: CheckpointCreate, current_user_id: UUID | None = None):
     db_obj = Checkpoint(**obj_in.model_dump())
