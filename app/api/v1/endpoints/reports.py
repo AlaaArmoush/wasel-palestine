@@ -41,19 +41,17 @@ def list_reports(
     status: Optional[ReportStatus] = None,
     category: Optional[ReportCategory] = None,
     author_id: Optional[UUID] = None,
-    
 ):
     reports, total = service.list_reports(
         db, pagination, status, category, author_id
     )
 
     return success_response(
-        data={
-            "items": [ReportOut.model_validate(r).model_dump() for r in reports],
-            "total": total,
-            "page": pagination.page,
-            "page_size": pagination.page_size,
-        },
+        data=PaginatedResponse.create(
+            [ReportOut.model_validate(r) for r in reports],
+            total,
+            pagination,
+        ),
         message="Reports retrieved"
     )
 
@@ -241,11 +239,10 @@ def list_moderation_logs(
     logs, total = service.list_moderation_logs(db, pagination)
 
     return success_response(
-        data={
-            "items": [ModerationLogOut.model_validate(log).model_dump() for log in logs],
-            "total": total,
-            "page": pagination.page,
-            "page_size": pagination.page_size,
-        },
+        data=PaginatedResponse.create(
+            [ModerationLogOut.model_validate(log) for log in logs],
+            total,
+            pagination,
+        ),
         message="Moderation logs retrieved",
     )
